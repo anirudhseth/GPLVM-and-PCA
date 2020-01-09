@@ -7,8 +7,10 @@ import numpy as np
 class pcaAlgo:
     def __init__(self, latent_dim,y,labels,title):
         self.latent_dim=latent_dim
-        self.y=pd.read_csv(y, header=None, sep='\s+').values
-        self.labels=(pd.read_csv(labels, header=None, sep='\s+').values)
+        # self.y=pd.read_csv(y, header=None, sep='\s+').values
+        # self.labels=(pd.read_csv(labels, header=None, sep='\s+').values)
+        self.y=y
+        self.labels=labels
         self.title=title
     def fitandPLot(self):
         pca = PCA(n_components=self.latent_dim)
