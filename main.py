@@ -20,7 +20,7 @@ def scatter2D(X,y,title):
         Xclass = X[classIdx,:]
         plt.scatter(Xclass[:,0],Xclass[:,1],linewidths=1,s=1,color=colors[label],marker='o',alpha=0.75)
         c += 1.
-    plt.title(title)
+    plt.title(title+' Classes:'+str(len(labels)))
     plt.show()
 
 
@@ -65,7 +65,7 @@ labels4=labels4-1
 title4='PCA on Wine Data Set'
 PCAalgo(lowerDim,y4,labels4,title4)
 
-
+# USPS Dataset# https://www.kaggle.com/bistaumanga/usps-dataset
 with h5py.File(filename, 'r') as hf:
         train = hf.get('train')
         X_tr = train.get('data')[:]
@@ -76,5 +76,5 @@ with h5py.File(filename, 'r') as hf:
 
 y5=X_tr
 labels5=y_tr
-title5='PCA on USPS'
+title5='PCA on USPS Dataset'
 PCAalgo(lowerDim,y5,labels5,title5)
