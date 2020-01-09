@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import matplotlib.cm as cm
+import h5py
 
 def scatter2D(X,y,title):
     labels = np.unique(y)
@@ -63,3 +64,17 @@ labels4 = genfromtxt('Datasets/wineY.txt', delimiter=',',dtype=np.int)
 labels4=labels4-1
 title4='PCA on Wine Data Set'
 PCAalgo(lowerDim,y4,labels4,title4)
+
+
+with h5py.File(filename, 'r') as hf:
+        train = hf.get('train')
+        X_tr = train.get('data')[:]
+        y_tr = train.get('target')[:]
+        test = hf.get('test')
+        X_te = test.get('data')[:]
+        y_te = test.get('target')[:]
+
+y5=X_tr
+labels5=y_tr
+title5='PCA on USPS'
+PCAalgo(lowerDim,y5,labels5,title5)
