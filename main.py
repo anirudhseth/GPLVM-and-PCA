@@ -76,6 +76,82 @@ def PCAandPlot(y,labels,title):
         plot2D(X_pca,labels,title)
 
 
+# RBF kernel    
+def rbf(X, sigma_f, length_scale, noise_coef=0.):
+
+    
+    num_points = X.shape[0]
+
+    cov = np.dot(X, X.T)
+    diag = np.diag(cov)
+
+    # (x_n - x_m)' (x_n - x_m) = x_n'x_n + x_m'x_m - 2x_n'x_m
+    cov_ = diag.reshape((num_points, 1)) + diag.reshape((1, num_points)) - 2 * cov
+
+    return (sigma_f ** 2.) * np.exp(-1. / (2 * length_scale ** 2.) * cov_) + noise_coef * np.eye(num_points)
+
+# Characteristic function for GP-LVM
+def logLik(K, Y):
+    D, N = Y.shape
+    K_inv = np.linalg.inv(K)
+
+    return -D*N/2*np.log(2*math.pi) - N/2*np.linalg.slogdet(K)[1] - 1/2*np.trace(np.dot(np.dot(K_inv,Y),Y.T))
+ 
+
+def sievingGPLVMalgo(lowerDim, Y, alpha, beta, gamma):
+    
+    X, alpha, beta, gamma = GPLVMfit(Y, lowerDim, alpha, beta, gamma, num_iter=10, learn_rate=1e-5, verbose=False, log_every=1)
+
+    return X
+
+
+def GPLVMalgo(lowerDim, Y, labels, title, alpha, beta, gamma):
+    
+    X, alpha, beta, gamma = GPLVMfit(Y, lowerDim, alpha, beta, gamma, num_iter=1000, learn_rate=1e-5, verbose=False, log_every=1)
+
+    scatter2D(X,labels,title)
+
+    return X , Y , labels
+
+
+def GPLVMfit (Y, latent_dim, alpha, beta, gamma, learn_rate=1e-6, num_iter=1000, verbose=True, log_every=50):
+
+    # Initial guess for X (latent variable) using regular PCA
+
+    pca = PCA(n_components = latent_dim)
+    X = pca.fit_transform(Y)
+    # Radial basis kernel for similarity matrix K
+    K = rbf(X, alpha, gamma, beta)
+    L = logLik(K, Y)
+
+    logLik_lambda = lambda X_, alpha_, beta_, gamma_: logLik(rbf(X_, alpha_, gamma_, beta_),Y)
+
+    # Parameters we wish to determine
+    theta = [X, alpha, beta, gamma]
+
+    # Compute gradients for each parameter
+    dlogLik_dTheta = [grad(logLik_lambda, i) for i in range(len(theta))]
+
+    # tqdm gives progress bar
+
+    for i in notebook.tqdm(range(num_iter)):
+                
+        grads = [logLik_partial(*theta) for logLik_partial in dlogLik_dTheta]
+        #[theta[j] + learn_rate * gradient for j, gradient in enumerate(grads)]
+
+        theta[0] = theta[0] + learn_rate * grads[0]
+        theta[1] = theta[1] + learn_rate * grads[1]
+        theta[2] = theta[2] + 1e-15 * grads[2]
+        theta[3] = theta[3] + 1e-7 * grads[3]
+
+        if verbose and i % log_every == 0:
+            print("Log-likelihood (iteration {}): {:.3f}".format(i + 1, logLik_lambda(*theta)))
+
+    if verbose:
+        print("Final log-likelihood: {:.3f}".format(logLik_lambda(*theta)))
+    return tuple(theta)
+
+
 
 y,labels=getOilFlowData()
 PCAandPlot(y,labels,'PCA on Oil Flow Data')
