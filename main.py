@@ -1,12 +1,15 @@
 
 import numpy as np
 from numpy import genfromtxt
-from sklearn.decomposition import PCA 
+from sklearn.decomposition import PCA , KernelPCA
+from sklearn.manifold import MDS,TSNE
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import matplotlib.cm as cm
 import h5py
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
 
 #Wine Data Set#  https://archive.ics.uci.edu/ml/Datasetss/wine
 def getWineData():
@@ -64,44 +67,30 @@ def plot2D(X,y,title):
         Xclass = X[classIdx,:]
         plt.scatter(Xclass[:,0],Xclass[:,1],linewidths=1,s=1,color=colors[label],marker='o',alpha=0.75)
         c += 1.
-    plt.title(title+' Classes:'+str(len(labels)), fontsize=10)
+    title+=',Classes:'+str(len(labels))
+    plt.title(title, fontsize=10)
+    filename="".join(t for t in title if t.isalnum())
+    # plt.savefig('Plots/'+filename+'.svg',format='svg', dpi=1200)
     plt.show()
-
-
-def PCAandPlot(y,labels,title):
-        latent_dim=2
-        pca = PCA(n_components=latent_dim)
-        X_pca = pca.fit_transform(y)
-        X_pca = X_pca
-        plot2D(X_pca,labels,title)
-
 
 # RBF kernel    
 def rbf(X, sigma_f, length_scale, noise_coef=0.):
-
-    
     num_points = X.shape[0]
-
     cov = np.dot(X, X.T)
     diag = np.diag(cov)
-
     # (x_n - x_m)' (x_n - x_m) = x_n'x_n + x_m'x_m - 2x_n'x_m
     cov_ = diag.reshape((num_points, 1)) + diag.reshape((1, num_points)) - 2 * cov
-
     return (sigma_f ** 2.) * np.exp(-1. / (2 * length_scale ** 2.) * cov_) + noise_coef * np.eye(num_points)
 
 # Characteristic function for GP-LVM
 def logLik(K, Y):
     D, N = Y.shape
     K_inv = np.linalg.inv(K)
-
     return -D*N/2*np.log(2*math.pi) - N/2*np.linalg.slogdet(K)[1] - 1/2*np.trace(np.dot(np.dot(K_inv,Y),Y.T))
  
 
 def sievingGPLVMalgo(lowerDim, Y, alpha, beta, gamma):
-    
     X, alpha, beta, gamma = GPLVMfit(Y, lowerDim, alpha, beta, gamma, num_iter=10, learn_rate=1e-5, verbose=False, log_every=1)
-
     return X
 
 
@@ -153,17 +142,82 @@ def GPLVMfit (Y, latent_dim, alpha, beta, gamma, learn_rate=1e-6, num_iter=1000,
 
 
 
+def PCAandPlot(y,labels,title,plot):
+        latent_dim=2
+        pca = PCA(n_components=latent_dim)
+        X_pca = pca.fit_transform(y)
+        X_pca = X_pca
+        title=title+', Algo:PCA'
+        KNNScore(X_pca,labels,title)
+        if(plot):
+             plot2D(X_pca,labels,title)
+
+def KernelPCAandPlot(y,labels,title,plot):
+        latent_dim=2
+        kpca = KernelPCA(n_components=latent_dim,kernel='poly')
+        X_kpca = kpca.fit_transform(y)
+        X_kpca = X_kpca
+        title=title+', Algo:Kernel PCA'
+        KNNScore(X_kpca,labels,title)
+        if(plot):
+            plot2D(X_kpca,labels,title)
+
+def MDSandPlot(y,labels,title,plot):
+        latent_dim=2
+        embedding = MDS(n_components=2)
+        X_transformed = embedding.fit_transform(y)
+        title=title+', Algo:MDS'
+        KNNScore(X_transformed,labels,title)
+        if(plot):
+            plot2D(X_transformed,labels,title)
+
+def TSNEandPlot(y,labels,title,plot):
+        X_embedded = TSNE(n_components=2).fit_transform(y)
+        title+=', Algo:TSNE'
+        KNNScore(X_embedded,labels,title)
+        if(plot):
+            plot2D(X_embedded,labels,title)      
+
+def KNNScore(x,y,title):
+        X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=42)
+        knn = KNeighborsClassifier(n_neighbors=1)
+        # Fit a nearest neighbor classifier on the embedded training set
+        knn.fit(X_train, y_train)
+        # Compute the nearest neighbor accuracy on the embedded test set
+        acc_knn = knn.score(X_test, y_test) #Return the mean accuracy on the given test data and labels.
+        print(title+',Accuracy Score:'+str(acc_knn))
+
+dataset_name='Dataset:Oil Flow'
 y,labels=getOilFlowData()
-PCAandPlot(y,labels,'PCA on Oil Flow Data')
+PCAandPlot(y,labels,dataset_name,plot=True)
+MDSandPlot(y,labels,dataset_name,plot=True)
+KernelPCAandPlot(y,labels,dataset_name,plot=True)
+TSNEandPlot(y,labels,dataset_name,plot=True)
 
-y,labels=getVowelDataset()
-PCAandPlot(y,labels,'PCA on Vowel Data')
+# dataset_name='Dataset:Vowels'
+# y,labels=getVowelDataset()
+# PCAandPlot(y,labels,dataset_name,plot=True)
+# MDSandPlot(y,labels,dataset_name,plot=True)
+# KernelPCAandPlot(y,labels,dataset_name,plot=True)
+# TSNEandPlot(y,labels,dataset_name,plot=True)
 
-y,labels=getOlivettiData()
-PCAandPlot(y,labels,'PCA on Olivetti faces Datasets')
+# dataset_name='Dataset:Olivetti faces'
+# y,labels=getOlivettiData()
+# PCAandPlot(y,labels,dataset_name,plot=True)
+# MDSandPlot(y,labels,dataset_name,plot=True)
+# KernelPCAandPlot(y,labels,dataset_name,plot=True)
+# TSNEandPlot(y,labels,dataset_name,plot=True)
 
-y,labels=getWineData()
-PCAandPlot(y,labels,'PCA on Wine Data Set')
-  
-y,labels=getUSPSData()
-PCAandPlot(y,labels,'PCA on USPS Dataset')
+# dataset_name='Dataset:Wine (UCI)'
+# y,labels=getWineData()
+# PCAandPlot(y,labels,dataset_name,plot=True)
+# MDSandPlot(y,labels,dataset_name,plot=True)
+# KernelPCAandPlot(y,labels,dataset_name,plot=True)
+# TSNEandPlot(y,labels,dataset_name,plot=True)
+
+# dataset_name='Dataset:USPS Digits'
+# y,labels=getUSPSData()
+# PCAandPlot(y,labels,dataset_name,plot=True)
+# MDSandPlot(y,labels,dataset_name,plot=True)
+# KernelPCAandPlot(y,labels,dataset_name,plot=True)
+# TSNEandPlot(y,labels,dataset_name,plot=True)
