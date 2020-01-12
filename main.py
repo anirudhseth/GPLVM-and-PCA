@@ -20,6 +20,7 @@ from sklearn.datasets import fetch_olivetti_faces
 def getWineData():
     y= genfromtxt('Datasets/wineX.txt', delimiter=',')
     labels = genfromtxt('Datasets/wineY.txt', delimiter=',',dtype=np.int)
+    labels=labels.astype(int)
     labels=labels-1
     return y,labels
 
@@ -140,13 +141,13 @@ def GPLVMfit(Y, latent_dim, alpha, beta, gamma, learn_rate=1e-6, num_iter=100, v
     for i in tqdm(range(num_iter)):
         
         grads = [loglik_partial(*theta) for loglik_partial in dloglik_dtheta]
-        # print('1')
+        print('1')
         theta[0] = theta[0] + learn_rate * grads[0] #[theta[j] + learn_rate * gradient for j, gradient in enumerate(grads)]
-        # print('2')
+        print('2')
         theta[1] = theta[1] + learn_rate * grads[1]
-        # print('3')
+        print('3')
         theta[2] = theta[2] + 1e-15 * grads[2]
-        # print('4')
+        print('4')
         theta[3] = theta[3] + 1e-7 * grads[3]
         # save=tuple(theta[1],theta[2],theta[3])
         save=[theta,loglik_lambda(*theta)]
@@ -159,6 +160,15 @@ def GPLVMfit(Y, latent_dim, alpha, beta, gamma, learn_rate=1e-6, num_iter=100, v
         print("Final log-likelihood: {:.3f}".format(loglik_lambda(*theta)))
     return tuple(theta)
 
+def ISOMapandPlot(y,labels,title,plot):
+        latent_dim=2
+        from sklearn.manifold import Isomap
+        embedding = Isomap(n_components=2)
+        X_transformed = embedding.fit_transform(y)
+        title=title+', Algo:ISOMAP'
+        KNNScore(X_transformed,labels,title)
+        if(plot):
+             plot2D(X_transformed,labels,title)
 
 
 def PCAandPlot(y,labels,title,plot):
@@ -206,16 +216,19 @@ def KNNScore(x,y,title):
         acc_knn = knn.score(X_test, y_test) #Return the mean accuracy on the given test data and labels.
         print(title+',Accuracy Score:'+str(acc_knn))
 
-# dataset_name='Dataset:Oil Flow'
-# y,labels=getOilFlowData()
+dataset_name='Dataset:Oil Flow'
+y,labels=getOilFlowData()
+ISOMapandPlot(y,labels,dataset_name,plot=True)
 # PCAandPlot(y,labels,dataset_name,plot=True)
 # GPLVMalgo(y,labels,dataset_name)
 # MDSandPlot(y,labels,dataset_name,plot=True)
 # KernelPCAandPlot(y,labels,dataset_name,plot=True)
 # TSNEandPlot(y,labels,dataset_name,plot=True)
 
-# dataset_name='Dataset:Vowels'
-# y,labels=getVowelDataset()
+dataset_name='Dataset:Vowels'
+y,labels=getVowelDataset()
+labels=labels.astype(int)
+ISOMapandPlot(y,labels,dataset_name,plot=True)
 # PCAandPlot(y,labels,dataset_name,plot=True)
 # MDSandPlot(y,labels,dataset_name,plot=True)
 # KernelPCAandPlot(y,labels,dataset_name,plot=True)
@@ -223,34 +236,40 @@ def KNNScore(x,y,title):
 
 dataset_name='Dataset:Human Activity Recognition Using Smartphones'
 y,labels=getHARdataset()
-y_train,y_test, labeels_train, labels_test = train_test_split(y, labels, test_size=0.33, random_state=42)
+ISOMapandPlot(y,labels,dataset_name,plot=True)
+# y_train,y_test, labeels_train, labels_test = train_test_split(y, labels, test_size=0.33, random_state=42)
 # PCAandPlot(y,labels,dataset_name,plot=True)
 # MDSandPlot(y,labels,dataset_name,plot=True)
 # KernelPCAandPlot(y,labels,dataset_name,plot=True)
 # TSNEandPlot(y,labels,dataset_name,plot=True)
-GPLVMalgo(y_test,labels_test,dataset_name)
+# GPLVMalgo(y_test,labels_test,dataset_name)
 
 
-# dataset_name='Dataset:Olivetti faces'
-# y,labels=getOlivettiData()
+dataset_name='Dataset:Olivetti faces'
+y,labels=getOlivettiData()
+ISOMapandPlot(y,labels,dataset_name,plot=True)
 # GPLVMalgo(y,labels,dataset_name)
 # PCAandPlot(y,labels,dataset_name,plot=True)
 # MDSandPlot(y,labels,dataset_name,plot=True)
 # KernelPCAandPlot(y,labels,dataset_name,plot=True)
 # TSNEandPlot(y,labels,dataset_name,plot=True)
 
-# dataset_name='Dataset:Wine (UCI)'
-# y,labels=getWineData()
+dataset_name='Dataset:Wine (UCI)'
+y,labels=getWineData()
+ISOMapandPlot(y,labels,dataset_name,plot=True)
 # PCAandPlot(y,labels,dataset_name,plot=True)
 # MDSandPlot(y,labels,dataset_name,plot=True)
 # KernelPCAandPlot(y,labels,dataset_name,plot=True)
 # TSNEandPlot(y,labels,dataset_name,plot=True)
 
-# dataset_name='Dataset:USPS Digits'
-# y,labels=getUSPSData()
+dataset_name='Dataset:USPS Digits'
+y,labels=getUSPSData()
+ISOMapandPlot(y,labels,dataset_name,plot=True)
 # y_train,y_test, labeels_train, labels_test = train_test_split(y, labels, test_size=0.33, random_state=42)
 # GPLVMalgo(y_test,labels_test,dataset_name)
 # PCAandPlot(y,labels,dataset_name,plot=True)
 # MDSandPlot(y,labels,dataset_name,plot=True)
 # KernelPCAandPlot(y,labels,dataset_name,plot=True)
 # TSNEandPlot(y,labels,dataset_name,plot=True)
+
+
