@@ -1,4 +1,4 @@
-
+%config InlineBackend.figure_format = 'svg'
 import numpy as np
 from numpy import genfromtxt
 from sklearn.decomposition import PCA , KernelPCA
@@ -10,6 +10,11 @@ import matplotlib.cm as cm
 import h5py
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
+from autograd import grad
+from tqdm import tqdm_notebook as tqdm
+import math
+import autograd.numpy as np
+from sklearn.datasets import fetch_olivetti_faces
 
 #Wine Data Set#  https://archive.ics.uci.edu/ml/Datasetss/wine
 def getWineData():
@@ -34,9 +39,12 @@ def getUSPSData():
 
 #Olivetti faces Datasets#    https://scikit-learn.org/0.19/Datasetss/olivetti_faces.html
 def getOlivettiData():
-    y = genfromtxt('Datasets/olivettifacesX.txt', delimiter=',')
-    y= y/255
-    labels = genfromtxt('Datasets/olivettifacesY.txt', delimiter=',',dtype=np.int)
+    # y = genfromtxt('Datasets/olivettifacesX.txt', delimiter=',')
+    # y= y/255
+    # labels = genfromtxt('Datasets/olivettifacesY.txt', delimiter='\n',dtype=np.int)
+    y=np.loadtxt("Datasets/olivetti_X.csv", delimiter = ",")
+    labels=np.loadtxt("Datasets/olivetti_y.csv", delimiter = ",")
+    labels=labels.astype(int)
     return y,labels
 
 #Oil Flow Datasets#
@@ -55,6 +63,19 @@ def getVowelDataset():
     labels = genfromtxt('Datasets/vowelY.txt', delimiter=',',dtype=np.int)
     return y,labels
 
+def getBreastCancerDataset():
+    from sklearn.datasets import load_breast_cancer
+    data = load_breast_cancer()
+    y=data['data']
+    labels=data['target']
+    return y,labels
+
+#http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones
+def getHARdataset():
+    y=np.loadtxt('Datasets\X_test.txt')
+    labels=np.loadtxt('Datasets\y_test.txt').astype(int)-1
+    return y,labels
+
 def plot2D(X,y,title):
     labels = np.unique(y)
     Ncolors = len(labels)
@@ -70,7 +91,7 @@ def plot2D(X,y,title):
     title+=',Classes:'+str(len(labels))
     plt.title(title, fontsize=10)
     filename="".join(t for t in title if t.isalnum())
-    # plt.savefig('Plots/'+filename+'.svg',format='svg', dpi=1200)
+    plt.savefig('Plots/'+filename+'.svg',format='svg', dpi=1200)
     plt.show()
 
 # RBF kernel    
@@ -83,10 +104,12 @@ def rbf(X, sigma_f, length_scale, noise_coef=0.):
     return (sigma_f ** 2.) * np.exp(-1. / (2 * length_scale ** 2.) * cov_) + noise_coef * np.eye(num_points)
 
 # Characteristic function for GP-LVM
-def logLik(K, Y):
+def loglik(K, Y):
+    
     D, N = Y.shape
     K_inv = np.linalg.inv(K)
-    return -D*N/2*np.log(2*math.pi) - N/2*np.linalg.slogdet(K)[1] - 1/2*np.trace(np.dot(np.dot(K_inv,Y),Y.T))
+
+    return -D*N/2*np.log(2*np.pi) - D/2*np.linalg.slogdet(K)[1] - 0.5*np.trace(np.dot(np.dot(K_inv, Y), Y.T))
  
 
 def sievingGPLVMalgo(lowerDim, Y, alpha, beta, gamma):
@@ -94,50 +117,46 @@ def sievingGPLVMalgo(lowerDim, Y, alpha, beta, gamma):
     return X
 
 
-def GPLVMalgo(lowerDim, Y, labels, title, alpha, beta, gamma):
-    
-    X, alpha, beta, gamma = GPLVMfit(Y, lowerDim, alpha, beta, gamma, num_iter=1000, learn_rate=1e-5, verbose=False, log_every=1)
+def GPLVMalgo(y, labels, title):
+    alpha, beta, gamma = 1., 1e-4, 1.
+    X, alpha, beta, gamma=GPLVMfit(y, 2, alpha, beta, gamma, num_iter=100, learn_rate=1e-5, verbose=True, log_every=1)
+    # np.savetxt('GPLVMData/gplvm_lowX.txt',X)
+    # save=[alpha,beta,gamma]
+    # np.savetxt('GPLVMData/gplvm_Param.txt',save)
+    title=title+', Algo:GPLVM'
+    KNNScore(X,labels,title)
+    plot2D(X,labels,title)
 
-    scatter2D(X,labels,title)
 
-    return X , Y , labels
-
-
-def GPLVMfit (Y, latent_dim, alpha, beta, gamma, learn_rate=1e-6, num_iter=1000, verbose=True, log_every=50):
-
-    # Initial guess for X (latent variable) using regular PCA
-
-    pca = PCA(n_components = latent_dim)
+def GPLVMfit(Y, latent_dim, alpha, beta, gamma, learn_rate=1e-6, num_iter=100, verbose=True, log_every=50):    
+    # Initial guess for X
+    pca = PCA(n_components=latent_dim)
     X = pca.fit_transform(Y)
-    # Radial basis kernel for similarity matrix K
     K = rbf(X, alpha, gamma, beta)
-    L = logLik(K, Y)
-
-    logLik_lambda = lambda X_, alpha_, beta_, gamma_: logLik(rbf(X_, alpha_, gamma_, beta_),Y)
-
-    # Parameters we wish to determine
+    L = loglik(K, Y)
+    loglik_lambda = lambda X_, alpha_, beta_, gamma_: loglik(rbf(X_, alpha_, gamma_, beta_), Y)
     theta = [X, alpha, beta, gamma]
-
-    # Compute gradients for each parameter
-    dlogLik_dTheta = [grad(logLik_lambda, i) for i in range(len(theta))]
-
-    # tqdm gives progress bar
-
-    for i in notebook.tqdm(range(num_iter)):
-                
-        grads = [logLik_partial(*theta) for logLik_partial in dlogLik_dTheta]
-        #[theta[j] + learn_rate * gradient for j, gradient in enumerate(grads)]
-
-        theta[0] = theta[0] + learn_rate * grads[0]
+    dloglik_dtheta = [grad(loglik_lambda, i) for i in range(len(theta))]
+    for i in tqdm(range(num_iter)):
+        
+        grads = [loglik_partial(*theta) for loglik_partial in dloglik_dtheta]
+        # print('1')
+        theta[0] = theta[0] + learn_rate * grads[0] #[theta[j] + learn_rate * gradient for j, gradient in enumerate(grads)]
+        # print('2')
         theta[1] = theta[1] + learn_rate * grads[1]
+        # print('3')
         theta[2] = theta[2] + 1e-15 * grads[2]
+        # print('4')
         theta[3] = theta[3] + 1e-7 * grads[3]
-
-        if verbose and i % log_every == 0:
-            print("Log-likelihood (iteration {}): {:.3f}".format(i + 1, logLik_lambda(*theta)))
-
+        # save=tuple(theta[1],theta[2],theta[3])
+        save=[theta,loglik_lambda(*theta)]
+        save=np.asarray(save)  
+        
+        np.save('GPLVMData/gplvm_iter'+str(i)+'.npy',save)
+        print("Log-likelihood (iteration {}): {:.3f}".format(i + 1, loglik_lambda(*theta)))
+    
     if verbose:
-        print("Final log-likelihood: {:.3f}".format(logLik_lambda(*theta)))
+        print("Final log-likelihood: {:.3f}".format(loglik_lambda(*theta)))
     return tuple(theta)
 
 
@@ -187,12 +206,13 @@ def KNNScore(x,y,title):
         acc_knn = knn.score(X_test, y_test) #Return the mean accuracy on the given test data and labels.
         print(title+',Accuracy Score:'+str(acc_knn))
 
-dataset_name='Dataset:Oil Flow'
-y,labels=getOilFlowData()
-PCAandPlot(y,labels,dataset_name,plot=True)
-MDSandPlot(y,labels,dataset_name,plot=True)
-KernelPCAandPlot(y,labels,dataset_name,plot=True)
-TSNEandPlot(y,labels,dataset_name,plot=True)
+# dataset_name='Dataset:Oil Flow'
+# y,labels=getOilFlowData()
+# PCAandPlot(y,labels,dataset_name,plot=True)
+# GPLVMalgo(y,labels,dataset_name)
+# MDSandPlot(y,labels,dataset_name,plot=True)
+# KernelPCAandPlot(y,labels,dataset_name,plot=True)
+# TSNEandPlot(y,labels,dataset_name,plot=True)
 
 # dataset_name='Dataset:Vowels'
 # y,labels=getVowelDataset()
@@ -201,8 +221,19 @@ TSNEandPlot(y,labels,dataset_name,plot=True)
 # KernelPCAandPlot(y,labels,dataset_name,plot=True)
 # TSNEandPlot(y,labels,dataset_name,plot=True)
 
+dataset_name='Dataset:Human Activity Recognition Using Smartphones'
+y,labels=getHARdataset()
+y_train,y_test, labeels_train, labels_test = train_test_split(y, labels, test_size=0.33, random_state=42)
+# PCAandPlot(y,labels,dataset_name,plot=True)
+# MDSandPlot(y,labels,dataset_name,plot=True)
+# KernelPCAandPlot(y,labels,dataset_name,plot=True)
+# TSNEandPlot(y,labels,dataset_name,plot=True)
+GPLVMalgo(y_test,labels_test,dataset_name)
+
+
 # dataset_name='Dataset:Olivetti faces'
 # y,labels=getOlivettiData()
+# GPLVMalgo(y,labels,dataset_name)
 # PCAandPlot(y,labels,dataset_name,plot=True)
 # MDSandPlot(y,labels,dataset_name,plot=True)
 # KernelPCAandPlot(y,labels,dataset_name,plot=True)
@@ -217,6 +248,8 @@ TSNEandPlot(y,labels,dataset_name,plot=True)
 
 # dataset_name='Dataset:USPS Digits'
 # y,labels=getUSPSData()
+# y_train,y_test, labeels_train, labels_test = train_test_split(y, labels, test_size=0.33, random_state=42)
+# GPLVMalgo(y_test,labels_test,dataset_name)
 # PCAandPlot(y,labels,dataset_name,plot=True)
 # MDSandPlot(y,labels,dataset_name,plot=True)
 # KernelPCAandPlot(y,labels,dataset_name,plot=True)

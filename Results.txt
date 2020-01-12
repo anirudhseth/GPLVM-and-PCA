@@ -22,3 +22,11 @@ Dataset:USPS Digits, Algo:PCA,Accuracy Score:0.4894058994599086
 Dataset:USPS Digits, Algo:MDS,Accuracy Score:0.4977149979227254
 Dataset:USPS Digits, Algo:Kernel PCA,Accuracy Score:0.4873286248442044
 Dataset:USPS Digits, Algo:TSNE,Accuracy Score:0.9630245118404653
+Dataset:USPS Digits, Algo:GPLVM,Accuracy Score:0.5748427672955975
+
+
+Dataset:Human Activity Recognition Using Smartphones, Algo:PCA,Accuracy Score:0.6721479958890031
+Dataset:Human Activity Recognition Using Smartphones, Algo:MDS,Accuracy Score:0.6402877697841727
+Dataset:Human Activity Recognition Using Smartphones, Algo:Kernel PCA,Accuracy Score:0.6628982528263104
+Dataset:Human Activity Recognition Using Smartphones, Algo:TSNE,Accuracy Score:0.9630010277492291
+Dataset:Human Activity Recognition Using Smartphones, Algo:GPLVM,Accuracy Score:0.6211180124223602
