@@ -2,21 +2,25 @@ Dataset:Oil Flow, Algo:PCA,Accuracy Score:0.8212121212121212
 Dataset:Oil Flow, Algo:MDS,Accuracy Score:0.8
 Dataset:Oil Flow, Algo:Kernel PCA,Accuracy Score:0.8
 Dataset:Oil Flow, Algo:TSNE,Accuracy Score:0.9878787878787879
+Dataset:Oil Flow, Algo:GPLVM,Accuracy Score:0.9606060606060606
 
 Dataset:Vowels, Algo:PCA,Accuracy Score:0.5828571428571429
 Dataset:Vowels, Algo:MDS,Accuracy Score:0.6857142857142857
 Dataset:Vowels, Algo:Kernel PCA,Accuracy Score:0.5771428571428572
 Dataset:Vowels, Algo:TSNE,Accuracy Score:0.9657142857142857
+Dataset:Vowels, Algo:GPLVM,Accuracy Score:0.92
 
 Dataset:Olivetti faces, Algo:PCA,Accuracy Score:0.3106060606060606
 Dataset:Olivetti faces, Algo:MDS,Accuracy Score:0.3409090909090909
 Dataset:Olivetti faces, Algo:Kernel PCA,Accuracy Score:0.29545454545454547
 Dataset:Olivetti faces, Algo:TSNE,Accuracy Score:0.8409090909090909
+Dataset:Olivetti faces, Algo:GPLVM,Accuracy Score:0.15151515151515152
 
 Dataset:Wine (UCI), Algo:PCA,Accuracy Score:0.711864406779661
 Dataset:Wine (UCI), Algo:MDS,Accuracy Score:0.711864406779661
 Dataset:Wine (UCI), Algo:Kernel PCA,Accuracy Score:0.7288135593220338
 Dataset:Wine (UCI), Algo:TSNE,Accuracy Score:0.711864406779661
+Dataset:Wine (UCI), Algo:GPLVM,Accuracy Score:0.7288135593220338
 
 Dataset:USPS Digits, Algo:PCA,Accuracy Score:0.4894058994599086
 Dataset:USPS Digits, Algo:MDS,Accuracy Score:0.4977149979227254
